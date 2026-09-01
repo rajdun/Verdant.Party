@@ -1,0 +1,13 @@
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <span>🌿</span>
+        <span>Verdant.Party</span>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{% url 'catalog:product_list' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'catalog' %}active{% endif %}">
+            <span>📦</span>
+            <span>Produkty</span>
+        </a>
+    </nav>
+</aside>

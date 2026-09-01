@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Dodaj zdjęcie — {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h1>Dodaj zdjęcie do produktu „{{ product.name }}”</h1>
+    </div>
+    <section class="card">
+        <form method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:0.75rem; max-width:420px;">
+            {% csrf_token %}
+            <div class="field">
+                <label for="{{ form.image.id_for_label }}">Plik zdjęcia</label>
+                {{ form.image }}
+            </div>
+            <div class="field">
+                <label for="{{ form.alt_text.id_for_label }}">Opis (alt)</label>
+                {{ form.alt_text }}
+            </div>
+            <label style="display:flex; align-items:center; gap:0.5rem; font-weight:500;">
+                {{ form.is_primary }} Ustaw jako zdjęcie główne
+            </label>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Prześlij</button>
+                <a class="btn btn-secondary" href="{% url 'catalog:product_detail' product.slug %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

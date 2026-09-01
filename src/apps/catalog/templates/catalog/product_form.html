@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edytuj produkt{% else %}Dodaj produkt{% endif %} — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width: 640px;">
+    <div class="page-header">
+        <h1>{% if form.instance.pk %}Edytuj produkt{% else %}Dodaj produkt{% endif %}</h1>
+    </div>
+
+    <section class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <p class="error-message">{{ form.non_field_errors }}</p>
+            {% endif %}
+
+            <fieldset>
+                <legend>Dane podstawowe</legend>
+                <div class="field">
+                    {{ form.sku.errors }}
+                    <label for="{{ form.sku.id_for_label }}">{{ form.sku.label }}</label>
+                    {{ form.sku }}
+                </div>
+                <div class="field">
+                    {{ form.name.errors }}
+                    <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                    {{ form.name }}
+                </div>
+                <div class="field">
+                    {{ form.item_type.errors }}
+                    <label for="{{ form.item_type.id_for_label }}">{{ form.item_type.label }}</label>
+                    {{ form.item_type }}
+                </div>
+                <div class="field">
+                    {{ form.price.errors }}
+                    <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+                    {{ form.price }}
+                </div>
+                <label style="display:flex; align-items:center; gap:0.5rem; font-weight:500;">
+                    {{ form.is_active }} {{ form.is_active.label }}
+                </label>
+            </fieldset>
+
+            <fieldset data-group="plant">
+                <legend>Szczegóły rośliny</legend>
+                <div class="field">
+                    {{ form.species.errors }}
+                    <label for="{{ form.species.id_for_label }}">{{ form.species.label }}</label>
+                    {{ form.species }}
+                </div>
+                <div class="field">
+                    {{ form.latin_name.errors }}
+                    <label for="{{ form.latin_name.id_for_label }}">{{ form.latin_name.label }}</label>
+                    {{ form.latin_name }}
+                </div>
+                <div class="field">
+                    {{ form.genus.errors }}
+                    <label for="{{ form.genus.id_for_label }}">{{ form.genus.label }}</label>
+                    {{ form.genus }}
+                </div>
+                <div class="field">
+                    {{ form.variety.errors }}
+                    <label for="{{ form.variety.id_for_label }}">{{ form.variety.label }}</label>
+                    {{ form.variety }}
+                </div>
+                <div class="field">
+                    {{ form.pot_size.errors }}
+                    <label for="{{ form.pot_size.id_for_label }}">{{ form.pot_size.label }}</label>
+                    {{ form.pot_size }}
+                </div>
+                <div class="field">
+                    {{ form.low_stock_threshold.errors }}
+                    <label for="{{ form.low_stock_threshold.id_for_label }}">{{ form.low_stock_threshold.label }}</label>
+                    {{ form.low_stock_threshold }}
+                </div>
+            </fieldset>
+
+            <fieldset data-group="material">
+                <legend>Szczegóły materiału</legend>
+                <div class="field">
+                    {{ form.length.errors }}
+                    <label for="{{ form.length.id_for_label }}">{{ form.length.label }}</label>
+                    {{ form.length }}
+                </div>
+                <div class="field">
+                    {{ form.width.errors }}
+                    <label for="{{ form.width.id_for_label }}">{{ form.width.label }}</label>
+                    {{ form.width }}
+                </div>
+                <div class="field">
+                    {{ form.height.errors }}
+                    <label for="{{ form.height.id_for_label }}">{{ form.height.label }}</label>
+                    {{ form.height }}
+                </div>
+                <div class="field">
+                    {{ form.dimension_unit.errors }}
+                    <label for="{{ form.dimension_unit.id_for_label }}">{{ form.dimension_unit.label }}</label>
+                    {{ form.dimension_unit }}
+                </div>
+                <div class="field">
+                    {{ form.material_unit.errors }}
+                    <label for="{{ form.material_unit.id_for_label }}">{{ form.material_unit.label }}</label>
+                    {{ form.material_unit }}
+                </div>
+            </fieldset>
+
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+                <a class="btn btn-secondary" href="{% if form.instance.pk %}{% url 'catalog:product_detail' form.instance.slug %}{% else %}{% url 'catalog:product_list' %}{% endif %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+
+<script>
+    (function () {
+        var select = document.querySelector('[data-type-toggle="item_type"]');
+        var plant = document.querySelector('fieldset[data-group="plant"]');
+        var material = document.querySelector('fieldset[data-group="material"]');
+        if (!select || !plant || !material) return;
+
+        function sync() {
+            var isMerchandise = select.value === "MERCHANDISE";
+            plant.hidden = !isMerchandise;
+            material.hidden = isMerchandise;
+        }
+
+        select.addEventListener("change", sync);
+        sync();
+    })();
+</script>
+{% endblock %}

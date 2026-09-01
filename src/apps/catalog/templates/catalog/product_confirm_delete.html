@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Usuń {{ product.name }} — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width: 480px;">
+    <div class="page-header">
+        <h1>Trwałe usunięcie</h1>
+    </div>
+    <section class="card">
+        <p>Czy na pewno chcesz trwale usunąć towar „{{ product }}”? Operacja jest nieodwracalna.</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="header-actions">
+                <button type="submit" class="btn btn-danger">Usuń trwale</button>
+                <a class="btn btn-secondary" href="{% url 'catalog:product_detail' product.slug %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

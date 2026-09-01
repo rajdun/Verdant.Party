@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>{{ product.name }} <small style="color: var(--color-text-muted); font-weight:400;">({{ product.sku }})</small></h1>
+            <p class="subtitle">
+                {{ product.get_item_type_display }}
+                {% if product.is_active %}
+                    <span class="status-pill status-active">Aktywny</span>
+                {% else %}
+                    <span class="status-pill status-inactive">Nieaktywny</span>
+                {% endif %}
+                {% if product.price %}&middot; {{ product.price }} zł{% endif %}
+            </p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'catalog:product_update' product.slug %}">Edytuj</a>
+            {% if product.is_active %}
+            <form method="post" action="{% url 'catalog:product_deactivate' product.slug %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Dezaktywuj</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'catalog:product_activate' product.slug %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Aktywuj</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'catalog:product_delete' product.slug %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Czy na pewno chcesz trwale usunąć ten towar? Operacja jest nieodwracalna.')">Usuń trwale</button>
+            </form>
+        </div>
+    </div>
+
+    <section class="card">
+        {% if product.item_type == "MERCHANDISE" %}
+        <h2>Szczegóły rośliny</h2>
+        <dl class="filters-grid" style="margin:0;">
+            <div class="field"><label>Gatunek</label><span>{{ product.species }}</span></div>
+            <div class="field"><label>Nazwa łacińska</label><span>{{ product.latin_name }}</span></div>
+            <div class="field"><label>Rodzaj</label><span>{{ product.genus }}</span></div>
+            <div class="field"><label>Odmiana</label><span>{{ product.variety }}</span></div>
+            <div class="field"><label>Rozmiar donicy</label><span>{{ product.pot_size }}</span></div>
+            <div class="field"><label>Próg niskiego stanu magazynowego</label><span>{{ product.low_stock_threshold }}</span></div>
+        </dl>
+        {% else %}
+        <h2>Szczegóły materiału</h2>
+        <dl class="filters-grid" style="margin:0;">
+            <div class="field"><label>Wymiary</label><span>{{ product.length }} &times; {{ product.width }} &times; {{ product.height }} {{ product.get_dimension_unit_display }}</span></div>
+            <div class="field"><label>Jednostka materiału</label><span>{{ product.get_material_unit_display }}</span></div>
+        </dl>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Zdjęcia</h2>
+        <div class="image-gallery">
+            {% for row in image_rows %}
+            <div class="image-card">
+                {% if row.image.thumbnail %}
+                    <img src="{{ row.image.thumbnail.url }}" alt="{{ row.image.alt_text }}" class="thumb">
+                {% endif %}
+                {% if row.image.is_primary %}<span class="badge">Główne</span>{% endif %}
+                <div class="image-actions">
+                    {% if not row.image.is_primary %}
+                    <form method="post" action="{% url 'catalog:product_image_set_primary' row.image.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary btn-sm">Ustaw jako główne</button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'catalog:product_image_delete' row.image.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Usunąć to zdjęcie?')">Usuń</button>
+                    </form>
+                    {% if row.up_order %}
+                    <form method="post" action="{% url 'catalog:product_image_reorder' product.slug %}">
+                        {% csrf_token %}
+                        {% for id in row.up_order %}<input type="hidden" name="image_id" value="{{ id }}">{% endfor %}
+                        <button type="submit" class="btn btn-secondary btn-sm">↑ Wyżej</button>
+                    </form>
+                    {% endif %}
+                    {% if row.down_order %}
+                    <form method="post" action="{% url 'catalog:product_image_reorder' product.slug %}">
+                        {% csrf_token %}
+                        {% for id in row.down_order %}<input type="hidden" name="image_id" value="{{ id }}">{% endfor %}
+                        <button type="submit" class="btn btn-secondary btn-sm">↓ Niżej</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="subtitle">Ten produkt nie ma jeszcze żadnych zdjęć.</p>
+            {% endfor %}
+        </div>
+
+        {% include "catalog/_image_form.html" %}
+    </section>
+</div>
+{% endblock %}

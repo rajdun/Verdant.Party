@@ -1,0 +1,18 @@
+<h3>Dodaj zdjęcie</h3>
+<form method="post" action="{% url 'catalog:product_image_add' product.slug %}" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:0.75rem; max-width:420px;">
+    {% csrf_token %}
+    <div class="field">
+        <label for="{{ image_form.image.id_for_label }}">Plik zdjęcia</label>
+        {{ image_form.image }}
+    </div>
+    <div class="field">
+        <label for="{{ image_form.alt_text.id_for_label }}">Opis (alt)</label>
+        {{ image_form.alt_text }}
+    </div>
+    <label style="display:flex; align-items:center; gap:0.5rem; font-weight:500;">
+        {{ image_form.is_primary }} Ustaw jako zdjęcie główne
+    </label>
+    <div>
+        <button type="submit" class="btn btn-primary">Prześlij</button>
+    </div>
+</form>
