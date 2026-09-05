@@ -5,10 +5,11 @@ from django.db.models import ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView, View
 
 from apps.catalog.forms import ProductForm, ProductImageForm
 from apps.catalog.models import Product, ProductImage
+from apps.common.views import CsvImportWizardMixin
 
 FILTERABLE_FIELDS = ("sku", "name", "item_type", "latin_name", "genus", "variety", "pot_size")
 SORTABLE_FIELDS = FILTERABLE_FIELDS
@@ -104,6 +105,38 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse("catalog:product_detail", kwargs={"slug": self.object.slug})
+
+
+class ProductImportUploadView(CsvImportWizardMixin, View):
+    form_class = ProductForm
+    session_key = "catalog_product_import_csv"
+    upload_template = "catalog/product_import_upload.html"
+    upload_url_name = "catalog:product_import_upload"
+    mapping_url_name = "catalog:product_import_mapping"
+    cancel_url_name = "catalog:product_list"
+
+    def get(self, request):
+        return self.handle_upload(request)
+
+    def post(self, request):
+        return self.handle_upload(request)
+
+
+class ProductImportMappingView(CsvImportWizardMixin, View):
+    form_class = ProductForm
+    session_key = "catalog_product_import_csv"
+    mapping_template = "catalog/product_import_mapping.html"
+    results_template = "catalog/product_import_results.html"
+    upload_url_name = "catalog:product_import_upload"
+    mapping_url_name = "catalog:product_import_mapping"
+    cancel_url_name = "catalog:product_list"
+    display_fields = ["sku", "name"]
+
+    def get(self, request):
+        return self.handle_mapping(request)
+
+    def post(self, request):
+        return self.handle_mapping(request)
 
 
 class ProductUpdateView(LoginRequiredMixin, UpdateView):

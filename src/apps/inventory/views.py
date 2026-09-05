@@ -9,9 +9,10 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
 
 from apps.catalog.models import Product
+from apps.common.views import CsvImportWizardMixin
 from apps.inventory.forms import LocationForm, StockBatchForm, StockBatchRelocateForm
 from apps.inventory.models import Location, StockBatch
 
@@ -47,6 +48,38 @@ class LocationCreateView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse("inventory:location_list")
+
+
+class LocationImportUploadView(CsvImportWizardMixin, View):
+    form_class = LocationForm
+    session_key = "inventory_location_import_csv"
+    upload_template = "inventory/location_import_upload.html"
+    upload_url_name = "inventory:location_import_upload"
+    mapping_url_name = "inventory:location_import_mapping"
+    cancel_url_name = "inventory:location_list"
+
+    def get(self, request):
+        return self.handle_upload(request)
+
+    def post(self, request):
+        return self.handle_upload(request)
+
+
+class LocationImportMappingView(CsvImportWizardMixin, View):
+    form_class = LocationForm
+    session_key = "inventory_location_import_csv"
+    mapping_template = "inventory/location_import_mapping.html"
+    results_template = "inventory/location_import_results.html"
+    upload_url_name = "inventory:location_import_upload"
+    mapping_url_name = "inventory:location_import_mapping"
+    cancel_url_name = "inventory:location_list"
+    display_fields = ["name", "code"]
+
+    def get(self, request):
+        return self.handle_mapping(request)
+
+    def post(self, request):
+        return self.handle_mapping(request)
 
 
 class LocationUpdateView(LoginRequiredMixin, UpdateView):

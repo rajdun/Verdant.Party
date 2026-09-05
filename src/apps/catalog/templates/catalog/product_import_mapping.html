@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Mapowanie kolumn — Importuj produkty — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h1>Mapowanie kolumn — {{ filename }}</h1>
+    </div>
+
+    {% if preview_rows %}
+    <section class="card">
+        <h3>Podgląd danych</h3>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {% for header in csv_headers %}<th>{{ header }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in preview_rows %}
+                    <tr>
+                        {% for value in row.values %}<td>{{ value }}</td>{% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+        <p>Dla każdej kolumny z pliku wybierz pole, do którego mają trafić dane. Kolumny bez wybranego pola zostaną pominięte.</p>
+        <form method="post">
+            {% csrf_token %}
+            <fieldset>
+                <legend>Mapowanie</legend>
+                {% for column in columns %}
+                <div class="field">
+                    <label for="map_{{ column.index }}">{{ column.header }}</label>
+                    <select id="map_{{ column.index }}" name="map_{{ column.index }}">
+                        <option value="">-- pomiń (nie importuj) --</option>
+                        {% for spec in field_specs %}
+                        <option value="{{ spec.name }}" {% if column.suggested == spec.name %}selected{% endif %}>{{ spec.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endfor %}
+            </fieldset>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Importuj</button>
+                <a class="btn btn-secondary" href="{% url cancel_url_name %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

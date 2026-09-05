@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Importuj produkty z CSV — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-narrow">
+    <div class="page-header">
+        <h1>Importuj produkty z CSV</h1>
+    </div>
+
+    <section class="card">
+        <p>Wgraj plik CSV (kodowanie UTF-8, kolumny rozdzielone przecinkiem lub średnikiem — np. eksport z Excela). W następnym kroku dopasujesz kolumny z pliku do pól formularza produktu.</p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="field">
+                <label for="csv_file">Plik CSV</label>
+                <input type="file" id="csv_file" name="csv_file" accept=".csv,text/csv">
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Dalej</button>
+                <a class="btn btn-secondary" href="{% url cancel_url_name %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

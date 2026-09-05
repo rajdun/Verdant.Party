@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Wyniki importu — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h1>Wyniki importu</h1>
+    </div>
+
+    <section class="card">
+        <p>Utworzono {{ created_count }} z {{ total_count }} wierszy. Wiersze z błędami poniżej nie zostały zaimportowane.</p>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Wiersz</th>
+                        <th>Nazwa</th>
+                        <th>Kod</th>
+                        <th>Status</th>
+                        <th>Błędy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.row_number }}</td>
+                        <td>{{ result.display.name|default:"—" }}</td>
+                        <td>{{ result.display.code|default:"—" }}</td>
+                        <td>
+                            {% if result.success %}
+                                <span class="status-pill status-active">Zaimportowano</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">Błąd</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if result.errors %}
+                                <ul>
+                                    {% for field, messages in result.errors.items %}
+                                    <li>{{ field }}: {% for message in messages %}{{ message.message }}{% if not forloop.last %}; {% endif %}{% endfor %}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="header-actions">
+        <a class="btn btn-primary" href="{% url cancel_url_name %}">Wróć do listy</a>
+    </div>
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@
             <p class="subtitle">Zarządzaj katalogiem produktów i filtruj towary.</p>
         </div>
         <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'catalog:product_import_upload' %}">Importuj z CSV</a>
             <a class="btn btn-primary" href="{% url 'catalog:product_create' %}">+ Dodaj produkt</a>
         </div>
     </div>
