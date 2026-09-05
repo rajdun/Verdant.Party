@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Fala #{{ batch.pk }} — podsumowanie{% endblock %}
+
+{% block content %}
+<div class="page">
+    {% include "logistics/_batch_tabs.html" %}
+
+    <div class="summary-row">
+        <div class="summary-tile">
+            <span class="summary-label">Zamówień w fali</span>
+            <span class="summary-value">{{ total_orders }}</span>
+        </div>
+        <div class="summary-tile">
+            <span class="summary-label">Spakowanych</span>
+            <span class="summary-value">{{ packed_orders }}</span>
+        </div>
+        <div class="summary-tile">
+            <span class="summary-label">Sztuk do zebrania</span>
+            <span class="summary-value">{{ total_units }}</span>
+        </div>
+        <div class="summary-tile">
+            <span class="summary-label">Wartość zamówień</span>
+            <span class="summary-value">{{ total_value|floatformat:2 }} zł</span>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Zamówienia do realizacji</h3>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Zamówienie</th>
+                        <th>Marketplace</th>
+                        <th>Odbiorca</th>
+                        <th>Dostawa</th>
+                        <th>Pozycji</th>
+                        <th>Wartość</th>
+                        <th>Stan</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <a href="{% url 'orders:order_detail' item.order.pk %}">{{ item.order.external_order_id }}</a>
+                            {% if item.order.has_unmapped_lines %}<span class="badge">bez mapowania</span>{% endif %}
+                        </td>
+                        <td>{{ item.order.marketplace.name }}</td>
+                        <td>{{ item.order.delivery_recipient_name|default:item.order.buyer_full_name|default:"—" }}</td>
+                        <td>{{ item.order.delivery_method_name|default:"—" }}</td>
+                        <td>{{ item.order.lines.all|length }}</td>
+                        <td>{{ item.order.total_to_pay|floatformat:2 }} zł</td>
+                        <td>
+                            {% if item.is_packed %}
+                                <span class="status-pill status-active">Spakowane {{ item.packed_at|date:"H:i" }}</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">Do spakowania</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not item.is_packed and batch.is_open %}
+                            <a class="btn btn-primary btn-sm" href="{% url 'logistics:batch_packing_order' batch.pk item.order.pk %}">Pakuj</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="9">Fala jest pusta.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="table-footer">
+            <span class="table-info">Pozycji łącznie: {{ total_positions }}</span>
+        </div>
+    </section>
+</div>
+{% endblock %}

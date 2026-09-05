@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Stany magazynowe — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Stany magazynowe</h1>
+            <p class="subtitle">Łączna ilość towaru — rozwiń wiersz, aby zobaczyć rozbicie na lokalizacje i partie.</p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-primary" href="{% url 'inventory:stockbatch_create' %}">+ Przyjmij towar</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Towar (SKU/nazwa)</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="location">Lokalizacja</label>
+                    <select id="location" name="location">
+                        <option value="">Dowolna</option>
+                        {% for location in locations %}
+                            <option value="{{ location.pk }}" {% if current_params.location == location.pk|stringformat:"s" %}selected{% endif %}>{{ location.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="sort">Sortuj wg</label>
+                    <select id="sort" name="sort">
+                        <option value="">Domyślnie</option>
+                        {% for field in sortable_fields %}
+                            <option value="{{ field }}" {% if current_params.sort == field %}selected{% endif %}>{{ field }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="order">Kierunek</label>
+                    <select id="order" name="order">
+                        <option value="asc" {% if current_params.order != "desc" %}selected{% endif %}>Rosnąco</option>
+                        <option value="desc" {% if current_params.order == "desc" %}selected{% endif %}>Malejąco</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'inventory:stock_overview' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:2.5rem;"></th>
+                        <th>SKU</th>
+                        <th>Towar</th>
+                        <th>Łączna ilość</th>
+                        <th>Lokalizacje</th>
+                        <th>Wartość</th>
+                        <th>Śr. koszt jedn.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <button type="button" class="btn btn-secondary btn-sm toggle-btn" data-toggle-row="stock-{{ product.pk }}" aria-expanded="false">▸</button>
+                        </td>
+                        <td><a href="{% url 'catalog:product_detail' product.slug %}">{{ product.sku }}</a></td>
+                        <td>{{ product.name }}</td>
+                        <td><strong>{{ product.total_quantity }}</strong></td>
+                        <td>{{ product.location_rows|length }}</td>
+                        <td>{{ product.total_value|floatformat:2 }} zł</td>
+                        <td>{{ product.avg_unit_cost|floatformat:2 }} zł</td>
+                    </tr>
+                    <tr hidden class="detail-row" id="stock-{{ product.pk }}">
+                        <td colspan="7">
+                            {% for row in product.location_rows %}
+                            <div class="location-block">
+                                <div class="location-head">
+                                    <span><strong>{{ row.location.name }}</strong> — {{ row.quantity }} szt. · {{ row.value|floatformat:2 }} zł</span>
+                                </div>
+                                <table class="data-table nested-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Data przyjęcia</th>
+                                            <th>Pozostało / przyjęto</th>
+                                            <th>Cena jedn.</th>
+                                            <th>Wartość</th>
+                                            <th>Dostawca / dokument</th>
+                                            <th>Akcje</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for batch in row.batches %}
+                                        <tr>
+                                            <td>{{ batch.received_at }}</td>
+                                            <td>{{ batch.quantity_remaining }} / {{ batch.quantity_received }}</td>
+                                            <td>{{ batch.unit_cost }} zł</td>
+                                            <td>{{ batch.remaining_value|floatformat:2 }} zł</td>
+                                            <td>{{ batch.supplier_name|default:"—" }}{% if batch.document_reference %} · {{ batch.document_reference }}{% endif %}</td>
+                                            <td>
+                                                <a class="btn btn-secondary btn-sm" href="{% url 'inventory:stockbatch_relocate' batch.pk %}">Zmień lokalizację</a>
+                                                {% if batch.is_locked %}
+                                                <span class="badge">Ruszona — tylko przeniesienie</span>
+                                                {% else %}
+                                                <a class="btn btn-secondary btn-sm" href="{% url 'inventory:stockbatch_update' batch.pk %}">Edytuj</a>
+                                                <a class="btn btn-danger btn-sm" href="{% url 'inventory:stockbatch_delete' batch.pk %}">Usuń</a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">Brak towaru na stanie.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Towarów na stanie: {{ page_obj.paginator.count|default:products|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<script>
+    (function () {
+        document.querySelectorAll('[data-toggle-row]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var row = document.getElementById(button.dataset.toggleRow);
+                if (!row) return;
+                row.hidden = !row.hidden;
+                button.textContent = row.hidden ? '▸' : '▾';
+                button.setAttribute('aria-expanded', row.hidden ? 'false' : 'true');
+            });
+        });
+    })();
+</script>
+{% endblock %}

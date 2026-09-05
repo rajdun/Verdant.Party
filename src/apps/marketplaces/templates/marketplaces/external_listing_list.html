@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Oferty z Allegro — {{ marketplace.name }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Oferty z Allegro</h1>
+            <p class="subtitle">
+                {{ marketplace.name }} — powiąż oferty z produktami w katalogu.
+                Bez mapowania pozycja zamówienia nie trafi na towar.
+            </p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_detail' marketplace.pk %}">← Integracja</a>
+            <a class="btn btn-secondary" href="{% url 'marketplaces:listing_list' %}?marketplace={{ marketplace.pk }}">Zapisane mapowania</a>
+        </div>
+    </div>
+
+    {% if error %}
+    <section class="card">
+        <p class="error-message">Nie udało się pobrać ofert: {{ error }}</p>
+    </section>
+    {% endif %}
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Tytuł lub ID oferty</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="only_unmapped">Tylko niezmapowane</label>
+                    <select id="only_unmapped" name="only_unmapped">
+                        <option value="">Nie</option>
+                        <option value="true" {% if current_params.only_unmapped == "true" %}selected{% endif %}>Tak</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'marketplaces:external_listing_list' marketplace.pk %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <form method="post" action="{% url 'marketplaces:listing_map' marketplace.pk %}">
+            {% csrf_token %}
+            <div style="overflow-x:auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mapuj</th>
+                            <th>ID oferty</th>
+                            <th>Tytuł</th>
+                            <th>Cena</th>
+                            <th>Obecne mapowanie</th>
+                            <th>Produkt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for offer in offers %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="external_id" value="{{ offer.external_id }}">
+                                <input type="hidden" name="title_{{ offer.external_id }}" value="{{ offer.title }}">
+                                <input type="hidden" name="picture_{{ offer.external_id }}" value="{{ offer.picture_url }}">
+                                <input type="hidden" name="price_{{ offer.external_id }}" value="{{ offer.price }}">
+                                <input type="hidden" name="currency_{{ offer.external_id }}" value="{{ offer.currency }}">
+                            </td>
+                            <td>{{ offer.external_id }}</td>
+                            <td>{{ offer.title }}</td>
+                            <td>{{ offer.price|floatformat:2 }} {{ offer.currency }}</td>
+                            <td>
+                                {% if offer.mapped_sku %}
+                                    <span class="status-pill status-active">{{ offer.mapped_sku }}</span>
+                                {% else %}
+                                    <span class="status-pill status-inactive">brak</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <select name="product_{{ offer.external_id }}">
+                                    <option value="">— wybierz —</option>
+                                    {% for product in products %}
+                                        <option value="{{ product.pk }}" {% if offer.mapped_sku == product.sku %}selected{% endif %}>{{ product.sku }} — {{ product.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6">Brak ofert do wyświetlenia.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-footer">
+                <span class="table-info">Ofert: {{ offers|length }}</span>
+                {% if offers %}
+                <button type="submit" class="btn btn-primary">Zapisz mapowania zaznaczonych</button>
+                {% endif %}
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

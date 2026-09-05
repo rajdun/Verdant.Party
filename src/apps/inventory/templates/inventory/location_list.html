@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Lokalizacje — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Lokalizacje</h1>
+            <p class="subtitle">Zarządzaj lokalizacjami magazynowymi.</p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-primary" href="{% url 'inventory:location_create' %}">+ Dodaj lokalizację</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Wyszukiwanie</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="is_active">Status</label>
+                    <select id="is_active" name="is_active">
+                        <option value="">Dowolny</option>
+                        <option value="true" {% if current_params.is_active == "true" %}selected{% endif %}>Aktywna</option>
+                        <option value="false" {% if current_params.is_active == "false" %}selected{% endif %}>Nieaktywna</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'inventory:location_list' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nazwa</th>
+                        <th>Kod</th>
+                        <th>Opis</th>
+                        <th>Status</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for location in locations %}
+                    <tr>
+                        <td>{{ location.name }}</td>
+                        <td>{{ location.code|default:"—" }}</td>
+                        <td>{{ location.description|default:"—" }}</td>
+                        <td>
+                            {% if location.is_active %}
+                                <span class="status-pill status-active">Aktywna</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">Nieaktywna</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="btn btn-secondary btn-sm" href="{% url 'inventory:location_update' location.pk %}">Edytuj</a>
+                            {% if location.is_active %}
+                            <form method="post" action="{% url 'inventory:location_deactivate' location.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">Dezaktywuj</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'inventory:location_activate' location.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">Aktywuj</button>
+                            </form>
+                            {% endif %}
+                            <a class="btn btn-danger btn-sm" href="{% url 'inventory:location_delete' location.pk %}">Usuń</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">Brak lokalizacji spełniających kryteria.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Łącznie: {{ page_obj.paginator.count|default:locations|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

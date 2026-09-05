@@ -84,3 +84,41 @@ src/
 ├── static/              # globalne statyki
 └── requirements/         # base / dev / prod
 ```
+
+## Integracja Allegro
+
+Zamówienia z marketplace'ów przegląda się w `/orders/`, integracje konfiguruje w `/marketplaces/`.
+
+### Konfiguracja
+
+1. Wygeneruj klucz szyfrujący i wstaw go do `.env` jako `DJANGO_FIELD_ENCRYPTION_KEY`:
+   ```
+   python manage.py generate_encryption_key
+   ```
+   Klucz chroni Client Secret i tokeny OAuth zapisane w bazie. Jego utrata oznacza
+   konieczność ponownego wpisania danych dostępowych wszystkich integracji.
+2. W panelu deweloperskim Allegro załóż aplikację (osobną dla sandboxa i produkcji)
+   i zarejestruj adres powrotny — ten sam, który ustawiasz w `ALLEGRO_REDIRECT_URI`,
+   domyślnie `http://localhost:8000/marketplaces/oauth/callback/`.
+3. W aplikacji: **Marketplace → Dodaj integrację**, wybierz środowisko, zapisz
+   Client ID i Client Secret, następnie **Połącz z Allegro**.
+4. **Oferty z Allegro** — powiąż oferty z produktami w katalogu. Bez mapowania
+   pozycja zamówienia trafi do systemu bez produktu, a zamówienie złożone wyłącznie
+   z niezmapowanych ofert zostanie odrzucone.
+
+### Synchronizacja
+
+Ręcznie: przycisk **Synchronizuj teraz** na stronie integracji.
+
+Automatycznie — z crona:
+
+```cron
+*/5  * * * * cd /sciezka/do/src && python manage.py sync_allegro_orders
+*/30 * * * * cd /sciezka/do/src && python manage.py refresh_allegro_tokens
+```
+
+Obie komendy przyjmują `--marketplace <id>` i `--dry-run`. Allegro nie wysyła
+webhooków o zamówieniach, więc import odpytuje strumień zdarzeń; identyfikator
+ostatniego przetworzonego zdarzenia trzymany jest w bazie i przesuwany po
+przetworzeniu paczki. Historia przebiegów i błędy importu są widoczne
+w **Marketplace → Synchronizacje**.

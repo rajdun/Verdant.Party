@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -12,7 +14,7 @@ FILTERABLE_FIELDS = ("sku", "name", "item_type", "latin_name", "genus", "variety
 SORTABLE_FIELDS = FILTERABLE_FIELDS
 
 
-class ProductListView(ListView):
+class ProductListView(LoginRequiredMixin, ListView):
     model = Product
     context_object_name = "products"
     template_name = "catalog/product_list.html"
@@ -64,7 +66,7 @@ class ProductListView(ListView):
         return context
 
 
-class ProductDetailView(DetailView):
+class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product
     slug_field = "slug"
     slug_url_kwarg = "slug"
@@ -95,7 +97,7 @@ class ProductDetailView(DetailView):
         return context
 
 
-class ProductCreateView(CreateView):
+class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = "catalog/product_form.html"
@@ -104,7 +106,7 @@ class ProductCreateView(CreateView):
         return reverse("catalog:product_detail", kwargs={"slug": self.object.slug})
 
 
-class ProductUpdateView(UpdateView):
+class ProductUpdateView(LoginRequiredMixin, UpdateView):
     model = Product
     form_class = ProductForm
     slug_field = "slug"
@@ -115,7 +117,7 @@ class ProductUpdateView(UpdateView):
         return reverse("catalog:product_detail", kwargs={"slug": self.object.slug})
 
 
-class ProductDeleteView(DeleteView):
+class ProductDeleteView(LoginRequiredMixin, DeleteView):
     model = Product
     slug_field = "slug"
     slug_url_kwarg = "slug"
@@ -135,6 +137,7 @@ class ProductDeleteView(DeleteView):
             return redirect("catalog:product_detail", slug=self.get_object().slug)
 
 
+@login_required
 @require_POST
 def product_activate(request, slug):
     product = get_object_or_404(Product, slug=slug)
@@ -143,6 +146,7 @@ def product_activate(request, slug):
     return redirect("catalog:product_detail", slug=slug)
 
 
+@login_required
 @require_POST
 def product_deactivate(request, slug):
     product = get_object_or_404(Product, slug=slug)
@@ -151,6 +155,7 @@ def product_deactivate(request, slug):
     return redirect("catalog:product_detail", slug=slug)
 
 
+@login_required
 def product_image_add(request, slug):
     product = get_object_or_404(Product, slug=slug)
     if request.method == "POST":
@@ -166,6 +171,7 @@ def product_image_add(request, slug):
     return render(request, "catalog/productimage_form.html", {"product": product, "form": form})
 
 
+@login_required
 @require_POST
 def product_image_delete(request, pk):
     image = get_object_or_404(ProductImage, pk=pk)
@@ -174,6 +180,7 @@ def product_image_delete(request, pk):
     return redirect("catalog:product_detail", slug=slug)
 
 
+@login_required
 @require_POST
 def product_image_set_primary(request, pk):
     image = get_object_or_404(ProductImage, pk=pk)
@@ -182,6 +189,7 @@ def product_image_set_primary(request, pk):
     return redirect("catalog:product_detail", slug=image.product.slug)
 
 
+@login_required
 @require_POST
 def product_image_reorder(request, slug):
     product = get_object_or_404(Product, slug=slug)

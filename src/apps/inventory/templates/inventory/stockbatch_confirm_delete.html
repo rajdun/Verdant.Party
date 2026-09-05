@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Usuń przyjęcie — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-narrow">
+    <div class="page-header">
+        <h1>Usuń przyjęcie</h1>
+    </div>
+
+    <section class="card">
+        <p>
+            Czy na pewno chcesz usunąć przyjęcie <strong>{{ object.product.sku }} @ {{ object.location.name }}</strong>
+            z dnia {{ object.received_at }} (pozostało {{ object.quantity_remaining }} z {{ object.quantity_received }} szt.,
+            cena {{ object.unit_cost }} zł/szt.)?
+        </p>
+        <p class="subtitle">Usunięcie zdejmie ten towar ze stanu magazynowego wraz z jego kosztem.</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="header-actions">
+                <button type="submit" class="btn btn-danger">Usuń</button>
+                <a class="btn btn-secondary" href="{% url 'inventory:stockbatch_list' %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}{{ marketplace.name }} — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>{{ marketplace.name }}</h1>
+            <p class="subtitle">
+                {{ marketplace.get_type_display }} · {{ marketplace.get_environment_display }} ·
+                {% if marketplace.is_connected %}
+                    <span class="status-pill status-active">połączona</span>
+                {% else %}
+                    <span class="status-pill status-inactive">rozłączona</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_list' %}">← Integracje</a>
+            <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_update' marketplace.pk %}">Edytuj</a>
+            <a class="btn btn-danger" href="{% url 'marketplaces:marketplace_delete' marketplace.pk %}">Usuń</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Połączenie z Allegro</h3>
+
+        {% if not marketplace.has_credentials %}
+        <p class="error-message">Brak Client ID / Client Secret — bez nich nie da się połączyć z Allegro.</p>
+        {% endif %}
+
+        <div class="spec-row"><span>Client ID</span><strong>{{ marketplace.client_id|default:"—" }}</strong></div>
+        <div class="spec-row"><span>Client Secret</span><strong>{% if marketplace.has_credentials %}zapisany (zaszyfrowany){% else %}—{% endif %}</strong></div>
+        <div class="spec-row"><span>Token ważny do</span><strong>{{ marketplace.access_token_expires_at|date:"Y-m-d H:i"|default:"brak sesji" }}</strong></div>
+        <div class="spec-row"><span>Kursor zdarzeń</span><strong>{{ marketplace.last_event_id|default:"brak — pierwszy import pobierze najnowsze zdarzenia" }}</strong></div>
+        <div class="spec-row"><span>Ostatnia synchronizacja</span><strong>{{ marketplace.last_synced_at|date:"Y-m-d H:i"|default:"—" }}</strong></div>
+        <div class="spec-row"><span>Adres powrotny OAuth</span><strong>{{ redirect_uri }}</strong></div>
+
+        <p class="table-info">
+            Adres powrotny musi być zarejestrowany w panelu deweloperskim Allegro dla tej aplikacji —
+            osobno dla sandboxa i dla produkcji.
+        </p>
+
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_credentials' marketplace.pk %}">Dane dostępowe</a>
+            {% if marketplace.has_credentials %}
+            <form method="post" action="{% url 'marketplaces:marketplace_connect' marketplace.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">
+                    {% if marketplace.is_connected %}Połącz ponownie{% else %}Połącz z Allegro{% endif %}
+                </button>
+            </form>
+            {% endif %}
+            {% if marketplace.is_connected %}
+            <form method="post" action="{% url 'marketplaces:marketplace_refresh_token' marketplace.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Odśwież token</button>
+            </form>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>Synchronizacja</h3>
+        <div class="summary-row">
+            <div class="summary-tile">
+                <span class="summary-label">Zmapowanych ofert</span>
+                <strong class="summary-value">{{ listing_count }}</strong>
+            </div>
+            <div class="summary-tile">
+                <span class="summary-label">Zamówień</span>
+                <strong class="summary-value">{{ order_count }}</strong>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:external_listing_list' marketplace.pk %}">Oferty z Allegro</a>
+            <a class="btn btn-secondary" href="{% url 'orders:order_list' %}?marketplace={{ marketplace.pk }}">Zamówienia</a>
+            {% if marketplace.is_connected %}
+            <form method="post" action="{% url 'marketplaces:marketplace_sync' marketplace.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Synchronizuj teraz</button>
+            </form>
+            {% endif %}
+        </div>
+
+        <p class="table-info">
+            Automatycznie: <code>manage.py sync_allegro_orders</code> (co 5 min) oraz
+            <code>manage.py refresh_allegro_tokens</code> (co 30 min) z crona.
+        </p>
+    </section>
+
+    <section class="card">
+        <h3>Ostatnie przebiegi</h3>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Start</th>
+                        <th>Rodzaj</th>
+                        <th>Status</th>
+                        <th>Zdarzeń</th>
+                        <th>Zaimportowano</th>
+                        <th>Pominięto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in recent_runs %}
+                    <tr>
+                        <td>{{ run.started_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ run.get_kind_display }}</td>
+                        <td>
+                            {% if run.status == "OK" %}
+                                <span class="status-pill status-active">{{ run.get_status_display }}</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">{{ run.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ run.events_seen }}</td>
+                        <td>{{ run.orders_imported }}</td>
+                        <td>{{ run.orders_skipped }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6">Brak przebiegów synchronizacji.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="table-footer">
+            <a class="btn btn-secondary btn-sm" href="{% url 'marketplaces:syncrun_list' %}?marketplace={{ marketplace.pk }}">Pełna historia</a>
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>Mapowania ofert</h3>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID oferty</th>
+                        <th>Tytuł</th>
+                        <th>Produkt</th>
+                        <th>Cena</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for listing in listings %}
+                    <tr>
+                        <td>{{ listing.external_id }}</td>
+                        <td>{{ listing.title }}</td>
+                        <td><a href="{% url 'catalog:product_detail' listing.product.slug %}">{{ listing.product.sku }}</a></td>
+                        <td>{{ listing.current_price|floatformat:2 }} {{ listing.currency }}</td>
+                        <td>
+                            {% if listing.status == "ACTIVE" %}
+                                <span class="status-pill status-active">{{ listing.get_status_display }}</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">{{ listing.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">Brak mapowań — bez nich pozycje zamówień nie trafią na produkty.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="table-footer">
+            <a class="btn btn-secondary btn-sm" href="{% url 'marketplaces:listing_list' %}?marketplace={{ marketplace.pk }}">Wszystkie mapowania</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edytuj integrację{% else %}Dodaj integrację{% endif %} — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-narrow">
+    <div class="page-header">
+        <h1>{% if form.instance.pk %}Edytuj integrację{% else %}Dodaj integrację{% endif %}</h1>
+    </div>
+
+    <section class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <p class="error-message">{{ form.non_field_errors }}</p>
+            {% endif %}
+
+            <fieldset>
+                <legend>Dane</legend>
+                <div class="field">
+                    {{ form.name.errors }}
+                    <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                    {{ form.name }}
+                </div>
+                <div class="field">
+                    {{ form.type.errors }}
+                    <label for="{{ form.type.id_for_label }}">{{ form.type.label }}</label>
+                    {{ form.type }}
+                </div>
+                <div class="field">
+                    {{ form.environment.errors }}
+                    <label for="{{ form.environment.id_for_label }}">{{ form.environment.label }}</label>
+                    {{ form.environment }}
+                    <span class="table-info">{{ form.environment.help_text }}</span>
+                </div>
+                <div class="field">
+                    {{ form.notification_email.errors }}
+                    <label for="{{ form.notification_email.id_for_label }}">{{ form.notification_email.label }}</label>
+                    {{ form.notification_email }}
+                </div>
+                <label style="display:flex; align-items:center; gap:0.5rem; font-weight:500;">
+                    {{ form.is_active }} {{ form.is_active.label }}
+                </label>
+            </fieldset>
+
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+                <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_list' %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

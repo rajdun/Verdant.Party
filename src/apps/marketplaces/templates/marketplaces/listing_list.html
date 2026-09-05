@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Mapowania ofert — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Mapowania ofert</h1>
+            <p class="subtitle">Powiązania ofert na marketplace'ach z produktami w katalogu.</p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_list' %}">Integracje</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Oferta lub produkt</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="marketplace">Marketplace</label>
+                    <select id="marketplace" name="marketplace">
+                        <option value="">Dowolny</option>
+                        {% for marketplace in marketplaces %}
+                            <option value="{{ marketplace.pk }}" {% if current_params.marketplace == marketplace.pk|stringformat:"s" %}selected{% endif %}>{{ marketplace.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="">Dowolny</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if current_params.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'marketplaces:listing_list' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID oferty</th>
+                        <th>Tytuł</th>
+                        <th>Marketplace</th>
+                        <th>Produkt</th>
+                        <th>Cena</th>
+                        <th>Status</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for listing in listings %}
+                    <tr>
+                        <td>{{ listing.external_id }}</td>
+                        <td>{{ listing.title }}</td>
+                        <td>{{ listing.marketplace.name }}</td>
+                        <td><a href="{% url 'catalog:product_detail' listing.product.slug %}">{{ listing.product.sku }}</a></td>
+                        <td>{{ listing.current_price|floatformat:2 }} {{ listing.currency }}</td>
+                        <td>
+                            {% if listing.status == "ACTIVE" %}
+                                <span class="status-pill status-active">{{ listing.get_status_display }}</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">{{ listing.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="btn btn-secondary btn-sm" href="{% url 'marketplaces:listing_update' listing.pk %}">Edytuj</a>
+                            {% if listing.status == "ACTIVE" %}
+                            <form method="post" action="{% url 'marketplaces:listing_end' listing.pk %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">Zakończ</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'marketplaces:listing_reactivate' listing.pk %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">Reaktywuj</button>
+                            </form>
+                            {% endif %}
+                            <a class="btn btn-danger btn-sm" href="{% url 'marketplaces:listing_delete' listing.pk %}">Usuń</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">Brak mapowań spełniających kryteria.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Łącznie: {{ page_obj.paginator.count|default:listings|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

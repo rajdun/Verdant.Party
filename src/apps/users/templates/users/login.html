@@ -1,0 +1,31 @@
+{% extends "base_auth.html" %}
+
+{% block title %}Logowanie — Verdant.Party{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h1 class="auth-title">Logowanie</h1>
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <p class="error-message">{{ form.non_field_errors }}</p>
+        {% endif %}
+
+        <div class="field">
+            {{ form.username.errors }}
+            <label for="{{ form.username.id_for_label }}">Login</label>
+            {{ form.username }}
+        </div>
+        <div class="field">
+            {{ form.password.errors }}
+            <label for="{{ form.password.id_for_label }}">Hasło</label>
+            {{ form.password }}
+        </div>
+
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <button type="submit" class="btn btn-primary auth-submit">Zaloguj się</button>
+    </form>
+</section>
+{% endblock %}

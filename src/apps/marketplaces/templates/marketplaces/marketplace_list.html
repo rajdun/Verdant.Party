@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Integracje marketplace — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Integracje marketplace</h1>
+            <p class="subtitle">Konta sprzedawcy, z których zaciągane są zamówienia.</p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:listing_list' %}">Mapowania ofert</a>
+            <a class="btn btn-secondary" href="{% url 'marketplaces:syncrun_list' %}">Synchronizacje</a>
+            <a class="btn btn-primary" href="{% url 'marketplaces:marketplace_create' %}">+ Dodaj integrację</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Nazwa</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="is_active">Aktywna</label>
+                    <select id="is_active" name="is_active">
+                        <option value="">Dowolna</option>
+                        <option value="true" {% if current_params.is_active == "true" %}selected{% endif %}>Tak</option>
+                        <option value="false" {% if current_params.is_active == "false" %}selected{% endif %}>Nie</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_list' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nazwa</th>
+                        <th>Typ</th>
+                        <th>Środowisko</th>
+                        <th>Dane dostępowe</th>
+                        <th>Połączenie</th>
+                        <th>Ostatnia synchronizacja</th>
+                        <th>Aktywna</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for marketplace in marketplaces %}
+                    <tr>
+                        <td><a href="{% url 'marketplaces:marketplace_detail' marketplace.pk %}">{{ marketplace.name }}</a></td>
+                        <td>{{ marketplace.get_type_display }}</td>
+                        <td>{{ marketplace.get_environment_display }}</td>
+                        <td>
+                            {% if marketplace.has_credentials %}
+                                <span class="status-pill status-active">ustawione</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">brak</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if marketplace.is_connected %}
+                                <span class="status-pill status-active">połączona</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">rozłączona</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ marketplace.last_synced_at|date:"Y-m-d H:i"|default:"—" }}</td>
+                        <td>
+                            {% if marketplace.is_active %}
+                            <form method="post" action="{% url 'marketplaces:marketplace_deactivate' marketplace.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">Dezaktywuj</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'marketplaces:marketplace_activate' marketplace.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">Aktywuj</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="btn btn-secondary btn-sm" href="{% url 'marketplaces:marketplace_detail' marketplace.pk %}">Szczegóły</a>
+                            <a class="btn btn-secondary btn-sm" href="{% url 'marketplaces:marketplace_update' marketplace.pk %}">Edytuj</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8">Brak integracji. Dodaj pierwszą, aby zacząć pobierać zamówienia.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Łącznie: {{ page_obj.paginator.count|default:marketplaces|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Zamówienie {{ order.external_order_id }} — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Zamówienie {{ order.external_order_id }}</h1>
+            <p class="subtitle">
+                {{ order.marketplace.name }} ·
+                {{ order.placed_at|date:"Y-m-d H:i"|default:"brak daty" }} ·
+                <span class="status-pill {% if order.status == 'CANCELLED' %}status-inactive{% else %}status-active{% endif %}">{{ order.get_status_display }}</span>
+            </p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'orders:order_list' %}">← Zamówienia</a>
+            <a class="btn btn-secondary" href="{{ order.external_url }}" target="_blank" rel="noopener noreferrer">Otwórz w Allegro</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Status</h3>
+        <div class="header-actions">
+            {% if order.status == "NEW" %}
+            <form method="post" action="{% url 'orders:order_start_fulfillment' order.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Przekaż do realizacji</button>
+            </form>
+            {% endif %}
+            {% if order.status == "IN_FULFILLMENT" %}
+            <form method="post" action="{% url 'orders:order_mark_shipped' order.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Oznacz jako wysłane</button>
+            </form>
+            {% endif %}
+            {% if order.status != "SHIPPED" and order.status != "CANCELLED" %}
+            <form method="post" action="{% url 'orders:order_cancel' order.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Anuluj zamówienie</button>
+            </form>
+            {% endif %}
+        </div>
+        {% if order.external_status %}
+        <p class="table-info">Status w Allegro: {{ order.external_status }}</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h3>Pozycje</h3>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Oferta</th>
+                        <th>SKU</th>
+                        <th>Ilość</th>
+                        <th>Cena jedn.</th>
+                        <th>Wartość</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in order.lines.all %}
+                    <tr>
+                        <td>
+                            {{ line.external_offer_name|default:"—" }}
+                            <br><span class="table-info">{{ line.external_offer_id }}</span>
+                        </td>
+                        <td>
+                            {% if line.product %}
+                                <a href="{% url 'catalog:product_detail' line.product.slug %}">{{ line.product.sku }}</a>
+                            {% else %}
+                                <span class="status-pill status-inactive">brak mapowania</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ line.quantity }}</td>
+                        <td>{{ line.unit_price|floatformat:2 }} {{ order.currency }}</td>
+                        <td>{{ line.total_price|floatformat:2 }} {{ order.currency }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">Zamówienie nie ma pozycji.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if order.has_unmapped_lines %}
+        <p class="error-message">
+            Część pozycji nie jest powiązana z produktem w katalogu —
+            <a href="{% url 'marketplaces:external_listing_list' order.marketplace.pk %}">uzupełnij mapowanie ofert</a>.
+        </p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h3>Rozliczenie</h3>
+        <h4 class="spec-group">Wpływy od kupującego</h4>
+        <div class="spec-row"><span>Do zapłaty</span><strong>{{ order.total_to_pay|floatformat:2 }} {{ order.currency }}</strong></div>
+        <div class="spec-row"><span>w tym dostawa</span><strong>{{ order.delivery_cost|floatformat:2 }} {{ order.currency }}</strong></div>
+        <div class="spec-row"><span>w tym wartość pozycji</span><strong>{{ order.items_total|floatformat:2 }} {{ order.currency }}</strong></div>
+
+        <h4 class="spec-group">Koszty własne</h4>
+        <div class="spec-row"><span>Zakup towaru (FIFO)</span><strong>{{ order.total_cogs|floatformat:2 }} {{ order.currency }}</strong></div>
+        <div class="spec-row"><span>Prowizja marketplace</span><strong>{{ order.platform_commission|floatformat:2 }} {{ order.currency }}</strong></div>
+        <div class="spec-row">
+            <span>Nadanie paczki{% if order.shipping_cost_source %} — {{ order.get_shipping_cost_source_display|lower }}{% endif %}</span>
+            <strong>{{ order.shipping_cost|floatformat:2 }} {{ order.currency }}</strong>
+        </div>
+        <div class="spec-row"><span>Razem koszty</span><strong>{{ order.total_costs|floatformat:2 }} {{ order.currency }}</strong></div>
+
+        <div class="spec-row spec-total">
+            <span>Marża brutto <small>(do zapłaty − koszty)</small></span>
+            <strong>{{ order.gross_profit|floatformat:2 }} {{ order.currency }}</strong>
+        </div>
+        {% if order.has_unmapped_lines %}
+        <p class="error-message">
+            Koszt towaru niepełny — pozycje bez mapowania na produkt nie schodzą ze stanu,
+            więc marża jest zawyżona.
+        </p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h3>Kupujący</h3>
+        <div class="spec-row"><span>Nazwa</span><strong>{{ order.buyer_full_name|default:"—" }}</strong></div>
+        <div class="spec-row"><span>Login</span><strong>{{ order.buyer_login|default:"—" }}</strong></div>
+        <div class="spec-row"><span>E-mail</span><strong>{{ order.buyer_email|default:"—" }}</strong></div>
+        <div class="spec-row"><span>Telefon</span><strong>{{ order.buyer_phone|default:"—" }}</strong></div>
+        <div class="spec-row"><span>Adres</span><strong>{{ order.buyer_address|default:"—" }}, {{ order.buyer_postal_code }} {{ order.buyer_city }} {{ order.buyer_country }}</strong></div>
+    </section>
+
+    <section class="card">
+        <h3>Dostawa</h3>
+        <div class="spec-row"><span>Odbiorca</span><strong>{{ order.delivery_recipient_name|default:"—" }}</strong></div>
+        {% if order.delivery_company_name %}
+        <div class="spec-row"><span>Firma</span><strong>{{ order.delivery_company_name }}</strong></div>
+        {% endif %}
+        <div class="spec-row"><span>Adres</span><strong>{{ order.delivery_street|default:"—" }}, {{ order.delivery_postal_code }} {{ order.delivery_city }} {{ order.delivery_country_code }}</strong></div>
+        <div class="spec-row"><span>Telefon</span><strong>{{ order.delivery_phone|default:"—" }}</strong></div>
+        <div class="spec-row"><span>Metoda</span><strong>{{ order.delivery_method_name|default:"—" }}</strong></div>
+        {% if order.delivery_pickup_point_id %}
+        <div class="spec-row"><span>Punkt odbioru</span><strong>{{ order.delivery_pickup_point_name|default:order.delivery_pickup_point_id }}</strong></div>
+        {% endif %}
+        {% if order.message_to_seller %}
+        <div class="spec-row"><span>Wiadomość do sprzedawcy</span><strong>{{ order.message_to_seller }}</strong></div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

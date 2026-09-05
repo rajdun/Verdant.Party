@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{% if form.instance.pk %}Edytuj przyjęcie{% else %}Przyjmij towar{% endif %} — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-form">
+    <div class="page-header">
+        <h1>{% if form.instance.pk %}Edytuj przyjęcie{% else %}Przyjmij towar{% endif %}</h1>
+    </div>
+
+    <section class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <p class="error-message">{{ form.non_field_errors }}</p>
+            {% endif %}
+
+            <fieldset>
+                <legend>Towar i lokalizacja</legend>
+                <div class="field">
+                    {{ form.product.errors }}
+                    <label for="{{ form.product.id_for_label }}">{{ form.product.label }}</label>
+                    {{ form.product }}
+                </div>
+                <div class="field">
+                    {{ form.location.errors }}
+                    <label for="{{ form.location.id_for_label }}">{{ form.location.label }}</label>
+                    {{ form.location }}
+                </div>
+                <div class="field">
+                    {{ form.received_at.errors }}
+                    <label for="{{ form.received_at.id_for_label }}">{{ form.received_at.label }}</label>
+                    {{ form.received_at }}
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Ilość i koszt</legend>
+                <div class="field">
+                    {{ form.quantity_received.errors }}
+                    <label for="{{ form.quantity_received.id_for_label }}">{{ form.quantity_received.label }}</label>
+                    {{ form.quantity_received }}
+                </div>
+                {% if form.quantity_remaining %}
+                <div class="field">
+                    {{ form.quantity_remaining.errors }}
+                    <label for="{{ form.quantity_remaining.id_for_label }}">{{ form.quantity_remaining.label }}</label>
+                    {{ form.quantity_remaining }}
+                </div>
+                {% endif %}
+                <div class="field">
+                    {{ form.unit_cost.errors }}
+                    <label for="{{ form.unit_cost.id_for_label }}">{{ form.unit_cost.label }}</label>
+                    {{ form.unit_cost }}
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Źródło</legend>
+                <div class="field">
+                    {{ form.supplier_name.errors }}
+                    <label for="{{ form.supplier_name.id_for_label }}">{{ form.supplier_name.label }}</label>
+                    {{ form.supplier_name }}
+                </div>
+                <div class="field">
+                    {{ form.document_reference.errors }}
+                    <label for="{{ form.document_reference.id_for_label }}">{{ form.document_reference.label }}</label>
+                    {{ form.document_reference }}
+                </div>
+                <div class="field">
+                    {{ form.note.errors }}
+                    <label for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+                    {{ form.note }}
+                </div>
+            </fieldset>
+
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+                <a class="btn btn-secondary" href="{% url 'inventory:stockbatch_list' %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

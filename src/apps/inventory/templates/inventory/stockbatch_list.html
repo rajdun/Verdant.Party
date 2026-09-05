@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Przyjęcia magazynowe — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Przyjęcia magazynowe</h1>
+            <p class="subtitle">Każde przyjęcie to partia z własną ceną zakupu — stąd liczony jest koszt wydanego towaru.</p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-primary" href="{% url 'inventory:stockbatch_create' %}">+ Przyjmij towar</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Towar (SKU/nazwa)</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="location">Lokalizacja</label>
+                    <select id="location" name="location">
+                        <option value="">Dowolna</option>
+                        {% for location in locations %}
+                            <option value="{{ location.pk }}" {% if current_params.location == location.pk|stringformat:"s" %}selected{% endif %}>{{ location.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="document">Dokument / faktura</label>
+                    <input type="text" id="document" name="document" value="{{ current_params.document|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="date_from">Data od</label>
+                    <input type="date" id="date_from" name="date_from" value="{{ current_params.date_from|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="date_to">Data do</label>
+                    <input type="date" id="date_to" name="date_to" value="{{ current_params.date_to|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="only_available">Tylko z pozostałym stanem</label>
+                    <select id="only_available" name="only_available">
+                        <option value="">Nie</option>
+                        <option value="true" {% if current_params.only_available == "true" %}selected{% endif %}>Tak</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'inventory:stockbatch_list' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>SKU</th>
+                        <th>Towar</th>
+                        <th>Lokalizacja</th>
+                        <th>Pozostało / przyjęto</th>
+                        <th>Cena jedn.</th>
+                        <th>Wartość przyjęcia</th>
+                        <th>Dostawca / dokument</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in batches %}
+                    <tr>
+                        <td>{{ batch.received_at }}</td>
+                        <td><a href="{% url 'catalog:product_detail' batch.product.slug %}">{{ batch.product.sku }}</a></td>
+                        <td>{{ batch.product.name }}</td>
+                        <td>{{ batch.location.name }}</td>
+                        <td>
+                            {% if batch.quantity_remaining == 0 %}
+                                <span class="status-pill status-inactive">0 / {{ batch.quantity_received }}</span>
+                            {% else %}
+                                {{ batch.quantity_remaining }} / {{ batch.quantity_received }}
+                            {% endif %}
+                        </td>
+                        <td>{{ batch.unit_cost }} zł</td>
+                        <td>{{ batch.total_cost|floatformat:2 }} zł</td>
+                        <td>{{ batch.supplier_name|default:"—" }}{% if batch.document_reference %} · {{ batch.document_reference }}{% endif %}</td>
+                        <td>
+                            {% if batch.quantity_remaining > 0 %}
+                            <a class="btn btn-secondary btn-sm" href="{% url 'inventory:stockbatch_relocate' batch.pk %}">Zmień lokalizację</a>
+                            {% endif %}
+                            {% if batch.is_locked %}
+                            <span class="badge">Ruszona — tylko przeniesienie</span>
+                            {% else %}
+                            <a class="btn btn-secondary btn-sm" href="{% url 'inventory:stockbatch_update' batch.pk %}">Edytuj</a>
+                            <a class="btn btn-danger btn-sm" href="{% url 'inventory:stockbatch_delete' batch.pk %}">Usuń</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="9">Brak przyjęć spełniających kryteria.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Łącznie: {{ page_obj.paginator.count|default:batches|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

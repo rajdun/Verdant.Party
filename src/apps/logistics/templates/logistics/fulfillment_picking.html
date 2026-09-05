@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Fala #{{ batch.pk }} — zbieranie{% endblock %}
+
+{% block content %}
+<div class="page">
+    {% include "logistics/_batch_tabs.html" %}
+
+    {% if shortages %}
+    <section class="card">
+        <p class="error-message">Dla {{ shortages }} pozycji brakuje stanu magazynowego. Pakowanie takiego zamówienia zostanie odrzucone — uzupełnij przyjęcia.</p>
+    </section>
+    {% endif %}
+
+    <section class="card">
+        <h3>Do zebrania</h3>
+        <p class="subtitle">Ilości zsumowane ze wszystkich zamówień fali. Lokalizacje w kolejności FIFO — dokładnie w takiej zejdą ze stanu przy pakowaniu.</p>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:2.5rem;"></th>
+                        <th>SKU</th>
+                        <th>Towar</th>
+                        <th>Do zebrania</th>
+                        <th>Lokalizacje</th>
+                        <th>Braki</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>
+                            <button type="button" class="btn btn-secondary btn-sm toggle-btn" data-toggle-row="pick-{{ row.product_id }}" aria-expanded="false">▸</button>
+                        </td>
+                        <td>{{ row.sku }}</td>
+                        <td>{{ row.name }}</td>
+                        <td><strong>{{ row.quantity }}</strong></td>
+                        <td>
+                            {% for entry in row.locations %}{{ entry.location.name }} ({{ entry.quantity }}){% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+                        </td>
+                        <td>
+                            {% if row.missing %}<span class="status-pill status-inactive">brakuje {{ row.missing }}</span>{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    <tr hidden class="detail-row" id="pick-{{ row.product_id }}">
+                        <td colspan="6">
+                            {% for entry in row.locations %}
+                            <div class="location-block">
+                                <div class="location-head">
+                                    <span><strong>{{ entry.location.name }}</strong> — pobierz {{ entry.quantity }} szt. · koszt jedn. {{ entry.unit_cost|floatformat:2 }} zł</span>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="error-message">Brak partii z dostępnym stanem.</p>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6">Brak zmapowanych pozycji do zebrania.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if unmapped %}
+    <section class="card">
+        <h3>Pozycje bez mapowania produktu</h3>
+        <p class="subtitle">Te oferty nie mają powiązania z produktem — nie da się podpowiedzieć lokalizacji, nie zdejmą stanu i nie wejdą do kosztu towaru.</p>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Oferta</th>
+                        <th>ID oferty</th>
+                        <th>Do zebrania</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in unmapped %}
+                    <tr>
+                        <td>{{ row.external_offer_name|default:"—" }}</td>
+                        <td>{{ row.external_offer_id }}</td>
+                        <td><strong>{{ row.quantity }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<script>
+    (function () {
+        document.querySelectorAll('[data-toggle-row]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var row = document.getElementById(button.dataset.toggleRow);
+                if (!row) return;
+                row.hidden = !row.hidden;
+                button.textContent = row.hidden ? '▸' : '▾';
+                button.setAttribute('aria-expanded', row.hidden ? 'false' : 'true');
+            });
+        });
+    })();
+</script>
+{% endblock %}

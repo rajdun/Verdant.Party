@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Usuń mapowanie oferty — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-narrow">
+    <div class="page-header">
+        <h1>Usuń mapowanie oferty</h1>
+    </div>
+
+    <section class="card">
+        <p>Czy na pewno chcesz usunąć mapowanie oferty <strong>{{ object.external_id }}</strong> ({{ object.title }})?</p>
+        <p class="table-info">
+            Po usunięciu pozycje nowych zamówień z tej oferty trafią do systemu bez powiązania z produktem.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="header-actions">
+                <button type="submit" class="btn btn-danger">Usuń</button>
+                <a class="btn btn-secondary" href="{% url 'marketplaces:listing_list' %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

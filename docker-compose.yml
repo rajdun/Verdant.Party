@@ -31,6 +31,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verdant}
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
+      # Puste = fallback deweloperski z config/settings/dev.py.
+      DJANGO_FIELD_ENCRYPTION_KEY: ${DJANGO_FIELD_ENCRYPTION_KEY:-}
+      ALLEGRO_REDIRECT_URI: ${ALLEGRO_REDIRECT_URI:-}
+      DJANGO_ADMIN_NOTIFICATION_EMAIL: ${DJANGO_ADMIN_NOTIFICATION_EMAIL:-}
     depends_on:
       db:
         condition: service_healthy

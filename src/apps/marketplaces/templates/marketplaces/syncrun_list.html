@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Synchronizacje — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Synchronizacje</h1>
+            <p class="subtitle">Historia importów zamówień i odświeżeń tokenów — tu szukaj przyczyn braków.</p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_list' %}">Integracje</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="marketplace">Marketplace</label>
+                    <select id="marketplace" name="marketplace">
+                        <option value="">Dowolny</option>
+                        {% for marketplace in marketplaces %}
+                            <option value="{{ marketplace.pk }}" {% if current_params.marketplace == marketplace.pk|stringformat:"s" %}selected{% endif %}>{{ marketplace.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="">Dowolny</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if current_params.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'marketplaces:syncrun_list' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Start</th>
+                        <th>Marketplace</th>
+                        <th>Rodzaj</th>
+                        <th>Status</th>
+                        <th>Zdarzeń</th>
+                        <th>Zaimportowano</th>
+                        <th>Pominięto</th>
+                        <th>Komunikat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in runs %}
+                    <tr>
+                        <td>{{ run.started_at|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ run.marketplace.name }}</td>
+                        <td>{{ run.get_kind_display }}</td>
+                        <td>
+                            {% if run.status == "OK" %}
+                                <span class="status-pill status-active">{{ run.get_status_display }}</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">{{ run.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ run.events_seen }}</td>
+                        <td>{{ run.orders_imported }}</td>
+                        <td>{{ run.orders_skipped }}</td>
+                        <td>{{ run.message|default:"—"|linebreaksbr }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8">Brak przebiegów synchronizacji.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Łącznie: {{ page_obj.paginator.count|default:runs|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

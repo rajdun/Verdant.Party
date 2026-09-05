@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Fala #{{ batch.pk }} — pakowanie {{ order.external_order_id }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    {% include "logistics/_batch_tabs.html" %}
+
+    <section class="card">
+        <div class="page-header" style="margin-bottom:0;">
+            <div>
+                <h3>{{ order.external_order_id }} — {{ position }} z {{ total_orders }}</h3>
+                <p class="subtitle">
+                    {{ order.marketplace.name }}
+                    {% if item.is_packed %}<span class="status-pill status-active">Spakowane</span>{% endif %}
+                </p>
+            </div>
+            <div class="header-actions">
+                {% if previous_order_id %}
+                <a class="btn btn-secondary" href="{% url 'logistics:batch_packing_order' batch.pk previous_order_id %}">← Poprzednie</a>
+                {% endif %}
+                {% if next_order_id %}
+                <a class="btn btn-secondary" href="{% url 'logistics:batch_packing_order' batch.pk next_order_id %}">Następne →</a>
+                {% endif %}
+                <a class="btn btn-secondary" href="{% url 'orders:order_detail' order.pk %}">Karta zamówienia</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>Do spakowania</h3>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Towar</th>
+                        <th>Ilość</th>
+                        <th>Skąd pobrać (FIFO)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row.line.product.sku|default:"—" }}</td>
+                        <td>
+                            {{ row.line.product.name|default:row.line.external_offer_name|default:row.line.external_offer_id }}
+                            {% if not row.line.product %}<span class="badge">bez mapowania</span>{% endif %}
+                        </td>
+                        <td><strong>{{ row.line.quantity }}</strong></td>
+                        <td>
+                            {% for entry in row.locations %}{{ entry.location.name }} ({{ entry.quantity }}){% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+                            {% if row.missing %}<span class="status-pill status-inactive">brakuje {{ row.missing }}</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>Dostawa</h3>
+        <div class="spec-row"><span>Odbiorca</span><span>{{ order.delivery_recipient_name|default:order.buyer_full_name|default:"—" }}</span></div>
+        <div class="spec-row"><span>Adres</span><span>{{ order.delivery_street|default:"—" }}, {{ order.delivery_postal_code }} {{ order.delivery_city }}</span></div>
+        <div class="spec-row"><span>Metoda dostawy</span><span>{{ order.delivery_method_name|default:"—" }}</span></div>
+        {% if order.delivery_pickup_point_name %}
+        <div class="spec-row"><span>Punkt odbioru</span><span>{{ order.delivery_pickup_point_name }} ({{ order.delivery_pickup_point_id }})</span></div>
+        {% endif %}
+        <div class="spec-row"><span>Telefon</span><span>{{ order.delivery_phone|default:order.buyer_phone|default:"—" }}</span></div>
+        {% if order.message_to_seller %}
+        <div class="spec-row"><span>Wiadomość od kupującego</span><span>{{ order.message_to_seller }}</span></div>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h3>Koszt wysyłki</h3>
+        {% if item.is_packed %}
+            <p class="subtitle">Zamówienie zostało już spakowane — koszt wysyłki {{ order.shipping_cost|floatformat:2 }} zł ({{ order.get_shipping_cost_source_display|default:"—" }}), koszt towaru {{ order.total_cogs|floatformat:2 }} zł.</p>
+        {% else %}
+            <p class="subtitle">
+                Wpisz kwotę ręcznie albo pobierz ją z rozliczeń Allegro. Wpis rozliczeniowy powstaje dopiero po nadaniu paczki — jeśli pobranie się nie uda, wpisz kwotę ręcznie lub spróbuj ponownie później.
+                {% if fetched_from_allegro %}<br><strong>Kwota poniżej pochodzi z Allegro.</strong>{% endif %}
+            </p>
+
+            <form method="post" action="{% url 'logistics:order_fetch_shipping_cost' batch.pk order.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Pobierz z Allegro</button>
+            </form>
+
+            <form method="post" action="{% url 'logistics:order_pack_confirm' batch.pk order.pk %}">
+                {% csrf_token %}
+                <div class="filters-grid">
+                    <div class="field">
+                        {{ form.shipping_cost.errors }}
+                        <label for="{{ form.shipping_cost.id_for_label }}">{{ form.shipping_cost.label }}</label>
+                        {{ form.shipping_cost }}
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button type="submit" class="btn btn-primary">Zatwierdź i pakuj dalej</button>
+                    {% if next_order_id %}
+                    <a class="btn btn-secondary" href="{% url 'logistics:batch_packing_order' batch.pk next_order_id %}">Pomiń</a>
+                    {% endif %}
+                </div>
+                <p class="subtitle">Zatwierdzenie zdejmie towar ze stanu metodą FIFO, zapisze koszt towaru i oznaczy zamówienie jako wysłane.</p>
+            </form>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

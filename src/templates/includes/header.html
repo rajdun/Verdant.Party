@@ -1,13 +1,87 @@
-<aside class="sidebar">
-    <div class="sidebar-brand">
-        <span>🌿</span>
+{% load static %}
+{% if request.user.is_authenticated %}
+<header class="topbar">
+    <button type="button" class="icon-btn nav-toggle" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">
+        <span class="material-icons">menu</span>
+    </button>
+    <a class="topbar-brand" href="{% url 'catalog:product_list' %}">
+        <img src="{% static 'img/logo.jpg' %}" class="brand-logo" alt="" />
         <span>Verdant.Party</span>
+    </a>
+    <button type="button" class="icon-btn palette-open" aria-label="Szukaj (Ctrl+K)">
+        <span class="material-icons">search</span>
+    </button>
+</header>
+<div class="scrim" data-close-nav hidden></div>
+{% endif %}
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <img src="{% static 'img/logo.jpg' %}" class="brand-logo" alt="" />
+        <span>Verdant.Party</span>
+        <button type="button" class="icon-btn sidebar-close" data-close-nav aria-label="Zamknij menu">
+            <span class="material-icons">close</span>
+        </button>
     </div>
-    <nav class="sidebar-nav">
+    {% if request.user.is_authenticated %}
+    <button type="button" class="palette-trigger palette-open">
+        <span class="material-icons">search</span>
+        <span>Szukaj sekcji</span>
+        <kbd>⌘K</kbd>
+    </button>
+
+    <nav class="sidebar-nav" aria-label="Nawigacja główna">
+        <p class="nav-group-label">Katalog</p>
         <a href="{% url 'catalog:product_list' %}"
            class="sidebar-link {% if request.resolver_match.app_name == 'catalog' %}active{% endif %}">
-            <span>📦</span>
+            <span class="material-icons">inventory_2</span>
             <span>Produkty</span>
         </a>
+
+        <p class="nav-group-label">Magazyn</p>
+        <a href="{% url 'inventory:stock_overview' %}"
+           class="sidebar-link {% if request.resolver_match.url_name == 'stock_overview' %}active{% endif %}">
+            <span class="material-icons">warehouse</span>
+            <span>Stany</span>
+        </a>
+        <a href="{% url 'inventory:stockbatch_list' %}"
+           class="sidebar-link {% if 'przyjecia' in request.path %}active{% endif %}">
+            <span class="material-icons">add_box</span>
+            <span>Przyjęcia</span>
+        </a>
+        <a href="{% url 'inventory:location_list' %}"
+           class="sidebar-link {% if 'lokalizacje' in request.path %}active{% endif %}">
+            <span class="material-icons">place</span>
+            <span>Lokalizacje</span>
+        </a>
+
+        <p class="nav-group-label">Sprzedaż</p>
+        <a href="{% url 'orders:order_list' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'orders' %}active{% endif %}">
+            <span class="material-icons">receipt_long</span>
+            <span>Zamówienia</span>
+        </a>
+        <a href="{% url 'logistics:batch_list' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'logistics' %}active{% endif %}">
+            <span class="material-icons">local_shipping</span>
+            <span>Realizacja</span>
+        </a>
+        <a href="{% url 'marketplaces:marketplace_list' %}"
+           class="sidebar-link {% if request.resolver_match.app_name == 'marketplaces' %}active{% endif %}">
+            <span class="material-icons">storefront</span>
+            <span>Marketplace</span>
+        </a>
     </nav>
+
+    <div class="sidebar-user">
+        <span class="avatar" aria-hidden="true">{{ request.user.username|slice:":2"|upper }}</span>
+        <span class="sidebar-user-name">{{ request.user.username }}</span>
+        <form method="post" action="{% url 'users:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="icon-btn" title="Wyloguj" aria-label="Wyloguj">
+                <span class="material-icons">logout</span>
+            </button>
+        </form>
+    </div>
+    {% endif %}
 </aside>

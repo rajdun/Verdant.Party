@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Realizacja zamówień — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Realizacja</h1>
+            <p class="subtitle">Zaznacz zamówienia i utwórz falę — potem zbierasz towar z jednej listy i pakujesz zamówienie po zamówieniu.</p>
+        </div>
+    </div>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Zamówienie / odbiorca</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="marketplace">Marketplace</label>
+                    <select id="marketplace" name="marketplace">
+                        <option value="">Dowolny</option>
+                        {% for marketplace in marketplaces %}
+                            <option value="{{ marketplace.pk }}" {% if current_params.marketplace == marketplace.pk|stringformat:"s" %}selected{% endif %}>{{ marketplace.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'logistics:batch_list' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <h3>Zamówienia do realizacji</h3>
+        <form method="post" action="{% url 'logistics:batch_create' %}">
+            {% csrf_token %}
+            <div style="overflow-x:auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:2.5rem;"><input type="checkbox" id="select-all" aria-label="Zaznacz wszystkie"></th>
+                            <th>Zamówienie</th>
+                            <th>Marketplace</th>
+                            <th>Odbiorca</th>
+                            <th>Dostawa</th>
+                            <th>Pozycji</th>
+                            <th>Wartość</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in candidates %}
+                        <tr>
+                            <td><input type="checkbox" name="orders" value="{{ order.pk }}" aria-label="Zamówienie {{ order.external_order_id }}"></td>
+                            <td><a href="{% url 'orders:order_detail' order.pk %}">{{ order.external_order_id }}</a></td>
+                            <td>{{ order.marketplace.name }}</td>
+                            <td>{{ order.delivery_recipient_name|default:order.buyer_full_name|default:"—" }}</td>
+                            <td>{{ order.delivery_method_name|default:"—" }}</td>
+                            <td>
+                                {{ order.lines.all|length }}
+                                {% if order.has_unmapped_lines %}<span class="badge">bez mapowania</span>{% endif %}
+                            </td>
+                            <td>{{ order.total_to_pay|floatformat:2 }} zł</td>
+                            <td><span class="status-pill status-active">{{ order.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8">Brak zamówień do realizacji poza otwartymi falami.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if candidates %}
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+                    {{ form.note }}
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Utwórz falę z zaznaczonych</button>
+            </div>
+            {% endif %}
+        </form>
+    </section>
+
+    <section class="card">
+        <h3>Fale</h3>
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Opis</th>
+                        <th>Status</th>
+                        <th>Postęp</th>
+                        <th>Utworzył(a)</th>
+                        <th>Utworzono</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in batches %}
+                    <tr>
+                        <td><a href="{% url 'logistics:batch_summary' batch.pk %}">{{ batch.pk }}</a></td>
+                        <td>{{ batch.note|default:"—" }}</td>
+                        <td><span class="status-pill {% if batch.is_open %}status-active{% else %}status-inactive{% endif %}">{{ batch.get_status_display }}</span></td>
+                        <td>{{ batch.packed_count }} / {{ batch.order_count }}</td>
+                        <td>{{ batch.created_by.username|default:"—" }}</td>
+                        <td>{{ batch.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <a class="btn btn-secondary btn-sm" href="{% url 'logistics:batch_summary' batch.pk %}">Otwórz</a>
+                            {% if batch.is_open %}
+                            <a class="btn btn-primary btn-sm" href="{% url 'logistics:batch_packing' batch.pk %}">Pakuj</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">Nie ma jeszcze żadnej fali.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Fal: {{ page_obj.paginator.count|default:batches|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<script>
+    (function () {
+        var toggle = document.getElementById('select-all');
+        if (!toggle) return;
+        toggle.addEventListener('change', function () {
+            document.querySelectorAll('input[name="orders"]').forEach(function (box) {
+                box.checked = toggle.checked;
+            });
+        });
+    })();
+</script>
+{% endblock %}

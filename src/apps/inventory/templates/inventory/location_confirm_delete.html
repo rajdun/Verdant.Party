@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Usuń lokalizację — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-narrow">
+    <div class="page-header">
+        <h1>Usuń lokalizację</h1>
+    </div>
+
+    <section class="card">
+        <p>Czy na pewno chcesz usunąć lokalizację <strong>{{ object.name }}</strong>?</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="header-actions">
+                <button type="submit" class="btn btn-danger">Usuń</button>
+                <a class="btn btn-secondary" href="{% url 'inventory:location_list' %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

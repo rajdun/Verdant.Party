@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Zmień lokalizację — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-narrow">
+    <div class="page-header">
+        <h1>Zmień lokalizację</h1>
+        <p class="subtitle">
+            {{ source.product.sku }} — {{ source.product.name }} · obecnie: {{ source.location.name }}
+            ({{ source.quantity_remaining }} szt. po {{ source.unit_cost }} zł)
+        </p>
+    </div>
+
+    <section class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <p class="error-message">{{ form.non_field_errors }}</p>
+            {% endif %}
+
+            <div class="field">
+                {{ form.location.errors }}
+                <label for="{{ form.location.id_for_label }}">{{ form.location.label }}</label>
+                {{ form.location }}
+            </div>
+            <div class="field">
+                {{ form.quantity.errors }}
+                <label for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+                {{ form.quantity }}
+            </div>
+
+            <p class="subtitle">Przeniesienie zachowuje cenę zakupu i datę przyjęcia — koszt partii się nie zmienia.</p>
+
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Przenieś</button>
+                <a class="btn btn-secondary" href="{% url 'inventory:stock_overview' %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

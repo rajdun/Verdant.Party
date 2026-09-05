@@ -2,27 +2,50 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
     <title>{% block title %}Verdant.Party{% endblock %}</title>
     {% load static %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 <body>
+    <a class="skip-link" href="#main">Przejdź do treści</a>
     <div class="app-shell">
         {% include "includes/header.html" %}
-        <main class="app-content">
+        <main class="app-content" id="main">
             {% if messages %}
-            <ul class="messages" style="margin: 1.5rem 2rem 0;">
+            <ul class="messages">
                 {% for message in messages %}
-                <li>{{ message }}</li>
+                <li class="message {{ message.tags }}">
+                    <span class="material-icons" aria-hidden="true">{% if 'error' in message.tags %}error_outline{% elif 'warning' in message.tags %}warning_amber{% elif 'success' in message.tags %}check_circle{% else %}info{% endif %}</span>
+                    <span>{{ message }}</span>
+                </li>
                 {% endfor %}
             </ul>
             {% endif %}
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    {% if request.user.is_authenticated %}
+    <div class="palette" id="palette" hidden>
+        <div class="palette-scrim" data-close-palette></div>
+        <div class="palette-box" role="dialog" aria-modal="true" aria-label="Szybka nawigacja">
+            <div class="palette-input">
+                <span class="material-icons" aria-hidden="true">search</span>
+                <input type="text" id="palette-query" placeholder="Dokąd idziemy?" autocomplete="off">
+                <kbd>esc</kbd>
+            </div>
+            <ul class="palette-list" id="palette-list"></ul>
+        </div>
+    </div>
+    {% endif %}
+
     {% include "includes/footer.html" %}
+    <script src="{% static 'js/app.js' %}" defer></script>
 </body>
 </html>

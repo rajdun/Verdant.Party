@@ -90,6 +90,10 @@ DATABASES = {
 
 AUTH_USER_MODEL = 'users.User'
 
+LOGIN_URL = 'users:login'
+LOGIN_REDIRECT_URL = 'catalog:product_list'
+LOGOUT_REDIRECT_URL = 'users:login'
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
@@ -137,6 +141,59 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL', 'noreply@verdant.party')
+
+# Adres, na który idą powiadomienia o błędach importu, gdy integracja
+# nie ma własnego notification_email.
+ADMIN_NOTIFICATION_EMAIL = os.environ.get('DJANGO_ADMIN_NOTIFICATION_EMAIL', '')
+
+
+# Szyfrowanie danych wrażliwych at-rest (apps.common.crypto)
+# Wygeneruj klucz: python manage.py generate_encryption_key
+# Rotacja: podaj klucze po przecinku, nowy jako pierwszy.
+
+FIELD_ENCRYPTION_KEY = [
+    key.strip()
+    for key in os.environ.get('DJANGO_FIELD_ENCRYPTION_KEY', '').split(',')
+    if key.strip()
+]
+
+
+# Integracja Allegro (apps.marketplaces.allegro)
+# Sandbox i produkcja różnią się wyłącznie adresami — client_id/secret siedzą
+# per integracja w bazie, tutaj tylko stałe wspólne dla całego systemu.
+
+ALLEGRO = {
+    'sandbox': {
+        'base_url': 'https://allegro.pl.allegrosandbox.pl',
+        'api_base_url': 'https://api.allegro.pl.allegrosandbox.pl',
+    },
+    'production': {
+        'base_url': 'https://allegro.pl',
+        'api_base_url': 'https://api.allegro.pl',
+    },
+    'app_name': 'Verdant.Party',
+    'rate_limit_per_minute': int(os.environ.get('ALLEGRO_RATE_LIMIT_PER_MINUTE', '1000')),
+    'rate_limit_window_seconds': int(os.environ.get('ALLEGRO_RATE_LIMIT_WINDOW_SECONDS', '60')),
+    'timeout_seconds': int(os.environ.get('ALLEGRO_TIMEOUT_SECONDS', '30')),
+    # Musi być identyczne w kroku authorize i token exchange oraz zarejestrowane
+    # w panelu deweloperskim Allegro — osobno dla sandboxa i produkcji.
+    'redirect_uri': os.environ.get('ALLEGRO_REDIRECT_URI', ''),
+    # Identyfikatory typów wpisów rozliczeniowych oznaczających opłatę za
+    # przesyłkę (Allegro Delivery). Konfigurowalne, bo Allegro dokłada nowe typy
+    # bez zapowiedzi — właściwe ID dla konta sprawdzisz komendą
+    # `manage.py dump_allegro_billing --order <id>`. Gdy żaden nie pasuje,
+    # `allegro/shipping.py` próbuje jeszcze dopasowania po nazwie typu.
+    'shipping_billing_types': [
+        code.strip()
+        for code in os.environ.get(
+            'ALLEGRO_SHIPPING_BILLING_TYPES',
+            'SUC,SUC_COR,DEL,DEL_COR',
+        ).split(',')
+        if code.strip()
+    ],
+}
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

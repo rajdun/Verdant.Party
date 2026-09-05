@@ -1,0 +1,31 @@
+{% comment %}Główka fali + pasek zakładek. Zakładki to zwykłe linki na trzy adresy.{% endcomment %}
+<div class="page-header">
+    <div>
+        <h1>Fala #{{ batch.pk }}{% if batch.note %} — {{ batch.note }}{% endif %}</h1>
+        <p class="subtitle">
+            <span class="status-pill {% if batch.is_open %}status-active{% else %}status-inactive{% endif %}">{{ batch.get_status_display }}</span>
+            · spakowano {{ packed_orders }} z {{ total_orders }}
+            {% if batch.created_by %}· utworzył(a) {{ batch.created_by.username }}{% endif %}
+            · {{ batch.created_at|date:"Y-m-d H:i" }}
+        </p>
+    </div>
+    <div class="header-actions">
+        <a class="btn btn-secondary" href="{% url 'logistics:batch_list' %}">Wszystkie fale</a>
+        {% if batch.is_open %}
+        <form method="post" action="{% url 'logistics:batch_finish' batch.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Zakończ falę</button>
+        </form>
+        <form method="post" action="{% url 'logistics:batch_cancel' batch.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Anuluj falę</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<nav class="tabs">
+    <a class="tab {% if active_tab == 'summary' %}active{% endif %}" href="{% url 'logistics:batch_summary' batch.pk %}">Podsumowanie</a>
+    <a class="tab {% if active_tab == 'picking' %}active{% endif %}" href="{% url 'logistics:batch_picking' batch.pk %}">Zbieranie</a>
+    <a class="tab {% if active_tab == 'packing' %}active{% endif %}" href="{% url 'logistics:batch_packing' batch.pk %}">Pakowanie</a>
+</nav>

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Zamówienia — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1>Zamówienia</h1>
+            <p class="subtitle">Zamówienia zaciągnięte z podpiętych marketplace'ów.</p>
+        </div>
+        <div class="header-actions">
+            <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_list' %}">Integracje</a>
+            <a class="btn btn-secondary" href="{% url 'marketplaces:syncrun_list' %}">Synchronizacje</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="summary-row">
+            <div class="summary-tile">
+                <span class="summary-label">Zamówień</span>
+                <strong class="summary-value">{{ totals.count }}</strong>
+            </div>
+            <div class="summary-tile">
+                <span class="summary-label">Do zapłaty</span>
+                <strong class="summary-value">{{ totals.revenue|floatformat:2 }} zł</strong>
+            </div>
+            <div class="summary-tile">
+                <span class="summary-label">Prowizje marketplace</span>
+                <strong class="summary-value">{{ totals.commission|floatformat:2 }} zł</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>Filtry</h3>
+        <form method="get">
+            <div class="filters-grid">
+                <div class="field">
+                    <label for="q">Szukaj (nr, kupujący, oferta)</label>
+                    <input type="search" id="q" name="q" value="{{ current_params.q|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="marketplace">Marketplace</label>
+                    <select id="marketplace" name="marketplace">
+                        <option value="">Dowolny</option>
+                        {% for marketplace in marketplaces %}
+                            <option value="{{ marketplace.pk }}" {% if current_params.marketplace == marketplace.pk|stringformat:"s" %}selected{% endif %}>{{ marketplace.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="">Dowolny</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if current_params.status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="date_from">Data od</label>
+                    <input type="date" id="date_from" name="date_from" value="{{ current_params.date_from|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="date_to">Data do</label>
+                    <input type="date" id="date_to" name="date_to" value="{{ current_params.date_to|default:'' }}">
+                </div>
+                <div class="field">
+                    <label for="unmapped">Tylko z niezmapowaną pozycją</label>
+                    <select id="unmapped" name="unmapped">
+                        <option value="">Nie</option>
+                        <option value="true" {% if current_params.unmapped == "true" %}selected{% endif %}>Tak</option>
+                    </select>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="submit" class="btn btn-primary">Szukaj</button>
+                <a class="btn btn-secondary" href="{% url 'orders:order_list' %}">Wyczyść</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div style="overflow-x:auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Numer</th>
+                        <th>Marketplace</th>
+                        <th>Kupujący</th>
+                        <th>Pozycje</th>
+                        <th>Do zapłaty</th>
+                        <th>Prowizja</th>
+                        <th>Status</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order.placed_at|date:"Y-m-d H:i"|default:"—" }}</td>
+                        <td><a href="{% url 'orders:order_detail' order.pk %}">{{ order.external_order_id }}</a></td>
+                        <td>{{ order.marketplace.name }}</td>
+                        <td>
+                            {{ order.buyer_full_name|default:order.buyer_login|default:"—" }}
+                            {% if order.delivery_city %}<br><span class="table-info">{{ order.delivery_city }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {{ order.lines.all|length }}
+                            {% if order.has_unmapped_lines %}
+                                <span class="status-pill status-inactive">brak mapowania</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ order.total_to_pay|floatformat:2 }} {{ order.currency }}</td>
+                        <td>{{ order.platform_commission|floatformat:2 }} {{ order.currency }}</td>
+                        <td>
+                            {% if order.status == "CANCELLED" %}
+                                <span class="status-pill status-inactive">{{ order.get_status_display }}</span>
+                            {% else %}
+                                <span class="status-pill status-active">{{ order.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="btn btn-secondary btn-sm" href="{% url 'orders:order_detail' order.pk %}">Szczegóły</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="9">Brak zamówień spełniających kryteria.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="table-footer">
+            <span class="table-info">Łącznie: {{ page_obj.paginator.count|default:orders|length }}</span>
+            {% if is_paginated %}
+            <nav class="pagination">
+                {% if page_obj.has_previous %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>
+                {% endif %}
+                <span class="table-info">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Następna →</a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

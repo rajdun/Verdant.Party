@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Usuń integrację — Verdant.Party{% endblock %}
+
+{% block content %}
+<div class="page page-narrow">
+    <div class="page-header">
+        <h1>Usuń integrację</h1>
+    </div>
+
+    <section class="card">
+        <p>Czy na pewno chcesz usunąć integrację <strong>{{ object.name }}</strong>?</p>
+        <p class="table-info">
+            Usunięcie skasuje zapisane dane dostępowe i historię synchronizacji.
+            Integracji z powiązanymi zamówieniami lub mapowaniami usunąć się nie da.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="header-actions">
+                <button type="submit" class="btn btn-danger">Usuń</button>
+                <a class="btn btn-secondary" href="{% url 'marketplaces:marketplace_detail' object.pk %}">Anuluj</a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}
